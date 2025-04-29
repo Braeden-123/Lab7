@@ -90,8 +90,13 @@ jobs:
     # Decode the base 64 encoded pfx and save the Signing_Certificate
     - name: Decode the pfx
       run: |
+        # Decode the Base64 encoded PFX file from GitHub secrets
         $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
-        $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
+        $certificateDirectory = Join-Path -Path $env:Wap_Project_Directory -ChildPath "GitHubActionsWorkflow"
+        if (-Not (Test-Path -Path $certificateDirectory)) {
+          New-Item -ItemType Directory -Path $certificateDirectory
+        }
+        $certificatePath = Join-Path -Path $certificateDirectory -ChildPath "GitHubActionsWorkflow.pfx"
         [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
 
     # Create the app package by building and packaging the Windows Application Packaging project
