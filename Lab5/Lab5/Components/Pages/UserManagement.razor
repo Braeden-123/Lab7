@@ -1,0 +1,113 @@
+﻿@page "/UserManagement"
+@inject Lab5.Services.ILibraryService LibraryService
+
+<PageTitle>UserManagement</PageTitle>
+
+<h1>User Management</h1>
+
+<h4>Add User</h4>
+<div>
+    <input @bind="newUserName" placeholder="Name" />
+    <input @bind="newUserEmail" placeholder="Email" />
+    <button @onclick="AddUser">Add User</button>
+</div>
+
+<h4>Users</h4>
+<table>
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+          @foreach (var user in users)
+        {
+            <tr>
+                <td>@user.Id</td>
+                @if (editingUserId == user.Id)
+                {
+                    <td><input @bind="editUserName" /></td>
+                    <td><input @bind="editUserEmail" /></td>
+                    <td>
+                        <button @onclick="() => SaveEdit(user)">Save</button>
+                        <button @onclick="CancelEdit">Cancel</button>
+                    </td>
+                }
+                else
+                {
+                    <td>@user.Name</td>
+                    <td>@user.Email</td>
+                    <td>
+                        <button @onclick="() => StartEdit(user)">Edit</button>
+                        <button @onclick="() => DeleteUser(user.Id)">Delete</button>
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Lab5.Models.User> users = new();
+    private string newUserName = string.Empty;
+    private string newUserEmail = string.Empty;
+    private int? editingUserId = null;
+    private string editUserName = string.Empty;
+    private string editUserEmail = string.Empty;
+    protected override void OnInitialized()
+    {
+        LoadUsers();
+    }
+    private void LoadUsers()
+    {
+        users = LibraryService.ReadUsers();
+    }
+    private void AddUser()
+    {
+        if (!string.IsNullOrWhiteSpace(newUserName) && !string.IsNullOrWhiteSpace(newUserEmail))
+        {
+            var user = new Lab5.Models.User
+            {
+                Name = newUserName,
+                Email = newUserEmail
+            };
+
+            LibraryService.AddUser(user);
+            LoadUsers();
+            newUserName = newUserEmail = string.Empty;
+        }
+    }
+    private void StartEdit(Lab5.Models.User user)
+    {
+        editingUserId = user.Id;
+        editUserName = user.Name;
+        editUserEmail = user.Email;
+    }
+    private void SaveEdit(Lab5.Models.User user)
+    {
+        if (editingUserId == user.Id &&
+            !string.IsNullOrWhiteSpace(editUserName) &&
+            !string.IsNullOrWhiteSpace(editUserEmail))
+        {
+            user.Name = editUserName;
+            user.Email = editUserEmail;
+            LibraryService.EditUser(user);
+            editingUserId = null;
+            LoadUsers();
+        }
+    }
+    private void CancelEdit()
+    {
+        editingUserId = null;
+        editUserName = string.Empty;
+        editUserEmail = string.Empty;
+    }
+    private void DeleteUser(int id)
+    {
+        LibraryService.DeleteUser(id);
+        LoadUsers();
+    }
+}

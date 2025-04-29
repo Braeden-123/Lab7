@@ -1,0 +1,92 @@
+﻿@page "/"
+@inject Lab5.Services.ILibraryService LibraryService
+
+<PageTitle>Home</PageTitle>
+
+<div>
+    <h4>Borrow Book</h4>
+    <div>
+        <label>Select Book:</label>
+        <select @bind="selectedBookId">
+            <option value="">-- Select a book --</option>
+            @foreach (var book in availableBooks)
+            {
+                <option value="@book.Id">@book.Title by @book.Author</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label>Select User:</label>
+        <select @bind="selectedUserId">
+            <option value="">-- Select a user --</option>
+            @foreach (var user in users)
+            {
+                <option value="@user.Id">@user.Name</option>
+            }
+        </select>
+    </div>
+    <button @onclick="HandleBorrowBook">Borrow</button>
+</div>
+
+<div>
+    <h4>Return Book</h4>
+    @if (borrowedBooks.Any())
+    {
+        foreach (var entry in borrowedBooks)
+        {
+            var user = GetUserById(entry.Key);
+            foreach (var book in entry.Value)
+            {
+                <div>
+                    <p>User: @user.Name - Book: @book.Title</p>
+                    <button @onclick="() => HandleReturnBook(book.Id, entry.Key)">Return</button>
+                </div>
+            }
+        }
+    }
+    else
+    {
+        <p>No books are currently borrowed.</p>
+    }
+</div>
+
+@code {
+    private List<Lab5.Models.Book> availableBooks = new();
+    private List<Lab5.Models.User> users = new();
+    private Dictionary<int, List<Lab5.Models.Book>> borrowedBooks = new();
+    private int? selectedBookId;
+    private int? selectedUserId;
+    protected override void OnInitialized()
+    {
+        availableBooks = LibraryService.ReadBooks();
+        users = LibraryService.ReadUsers();
+        borrowedBooks = LibraryService.GetBorrowedBooks();
+    }
+    private void HandleBorrowBook()
+    {
+        if (selectedBookId.HasValue && selectedUserId.HasValue)
+        {
+            var success = LibraryService.BorrowBook(selectedBookId.Value, selectedUserId.Value);
+            if (success)
+            {
+                availableBooks = LibraryService.ReadBooks();
+                borrowedBooks = LibraryService.GetBorrowedBooks();
+                selectedBookId = null;
+                selectedUserId = null;
+            }
+        }
+    }
+    private void HandleReturnBook(int bookId, int userId)
+    {
+        var success = LibraryService.ReturnBook(bookId, userId);
+        if (success)
+        {
+            availableBooks = LibraryService.ReadBooks();
+            borrowedBooks = LibraryService.GetBorrowedBooks();
+        }
+    }
+    private Lab5.Models.User GetUserById(int userId)
+    {
+        return users.FirstOrDefault(u => u.Id == userId) ?? new Lab5.Models.User { Name = "Unknown" };
+    }
+}
